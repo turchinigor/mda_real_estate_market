@@ -2,6 +2,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+
+def scrap_element(element_type, wrapper, identifier: str, extract_type: str = "text") -> str | None:
+    try:
+        elem = wrapper.find_element(element_type, identifier)
+        if extract_type == "text":
+            return elem.text
+        else:
+            return elem.get_attribute(extract_type)
+    except Exception as e:
+        print(f"Error extracting {extract_type}: {e}")
+        return None
+
 def scrap_url(driver, url: str) -> list[dict]:
     driver.get(url)
     
@@ -27,18 +39,14 @@ def scrap_url(driver, url: str) -> list[dict]:
     for i, wrapper in enumerate(wrappers):
         try:
             # Extract elements within each wrapper
-            url_elem = wrapper.find_element(By.CSS_SELECTOR, url_identifier_class)
-            listing_url = url_elem.get_attribute("href")
-            description = url_elem.text
+            listing_url = scrap_element(element_type=By.CSS_SELECTOR, wrapper=wrapper, identifier=url_identifier_class, extract_type="href")
+            description = scrap_element(element_type=By.CSS_SELECTOR, wrapper=wrapper, identifier=url_identifier_class, extract_type="text")
             
-            square_m2_elem = wrapper.find_element(By.CSS_SELECTOR, square_m2_class)
-            square_m2 = square_m2_elem.text
+            square_m2 = scrap_element(element_type=By.CSS_SELECTOR, wrapper=wrapper, identifier=square_m2_class, extract_type="text")
             
-            price_elem = wrapper.find_element(By.CSS_SELECTOR, price_class)
-            price = price_elem.text
+            price = scrap_element(element_type=By.CSS_SELECTOR, wrapper=wrapper, identifier=price_class, extract_type="text")
             
-            date_elem = wrapper.find_element(By.CSS_SELECTOR, date_class)
-            date = date_elem.text
+            date = scrap_element(element_type=By.CSS_SELECTOR, wrapper=wrapper, identifier=date_class, extract_type="text")
             
             # Store in a dict
             listing = {
@@ -57,3 +65,8 @@ def scrap_url(driver, url: str) -> list[dict]:
             continue  # Skip problematic listings
     
     return listings
+
+
+# map_url_class = "adPage__content__map-redirect"
+# ^ get.attribute("href")
+# contains the longitude and latitude
