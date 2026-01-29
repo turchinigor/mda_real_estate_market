@@ -81,9 +81,15 @@ def next_page(driver):
     next_button = "[class^='Pagination_pagination__container__buttons__wrapper__icon__next']"
     try:
         n_elem = driver.find_element(By.CSS_SELECTOR, next_button)
-        n_elem.click()
-        return True
+        # Check if button is enabled (not disabled)
+        if n_elem.get_attribute("disabled") is None:
+            n_elem.click()
+            return True
+        else:
+            logger.info("Next button is disabled - reached last page")
+            return False
     except Exception as e:
+        logger.warning(f"Could not find next button: {e}")
         return False
 
 def scrap_urls(driver, base_url: str, path: Path, file_name: str):
@@ -102,6 +108,9 @@ def scrap_urls(driver, base_url: str, path: Path, file_name: str):
         logger.info(f"Resuming scraping from page{p}")
     page_availability = True
     driver.get(base_url)
+    if p > 1:
+        for _ in range(p-1):
+            next_page(driver=driver)
     while page_availability:
         listings_page = scrap_page(driver, p)
         listings.extend(listings_page)

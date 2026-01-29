@@ -3,3 +3,4 @@ data/
 .env
 config/
 logs/
+__pychache__/
