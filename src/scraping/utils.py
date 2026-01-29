@@ -86,7 +86,7 @@ def next_page(driver):
     except Exception as e:
         return False
 
-def scrap_urls(driver, base_url: str, pages: int, path: Path, file_name: str):
+def scrap_urls(driver, base_url: str, path: Path, file_name: str):
     try:
         existing_listings = read_json(Path(path, file_name))
     except Exception as e:
@@ -98,16 +98,16 @@ def scrap_urls(driver, base_url: str, pages: int, path: Path, file_name: str):
         p = 1
     else:
         listings = existing_listings
-        p = listings[-1]["page"]
+        p = listings[-1]["page"] + 1
         logger.info(f"Resuming scraping from page{p}")
     page_availability = True
     driver.get(base_url)
-    while page_availability and p <= pages:
+    while page_availability:
         listings_page = scrap_page(driver, p)
         listings.extend(listings_page)
         page_availability = next_page(driver)
         p += 1
-        save_json(Path(path, file_name), listings=listings)
+        save_json(Path(path, f"{file_name}.json"), data=listings)
     return listings
 # map_url_class = "adPage__content__map-redirect"
 # ^ get.attribute("href")
