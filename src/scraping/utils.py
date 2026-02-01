@@ -116,7 +116,7 @@ def scrap_urls(driver, base_url: str, path: Path, file_name: str):
         listings.extend(listings_page)
         page_availability = next_page(driver)
         p += 1
-        save_json(Path(path, f"{file_name}.json"), data=listings)
+        save_json(Path(path, file_name), data=listings)
     return listings
 # map_url_class = "adPage__content__map-redirect"
 # ^ get.attribute("href")

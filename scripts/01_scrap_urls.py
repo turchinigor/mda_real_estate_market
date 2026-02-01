@@ -14,7 +14,7 @@ with open(config_path, 'r') as f:
 today = datetime.date.today()
 
 #Output Path
-PATH_URLS = Path(Path(__file__).parent.parent / "data" / "urls" / str(today))
+PATH_URLS = Path(Path(__file__).parent.parent / "data" / str(today)) / "urls" / "raw"
 
 #Scrap all listings URLs
 scrap_urls_pipeline(listing_types = config["urls"], path = PATH_URLS)

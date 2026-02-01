@@ -2,6 +2,8 @@
 Used for reading and writing files
 """
 from pathlib import Path
+import pandas as pd
+import openpyxl
 import json
 
 from .logging_config import setup_logging, get_logger
@@ -36,3 +38,10 @@ def read_json(path: Path) -> list[dict] | None:
     except Exception as e:
         logger.error(f"Unexpected error reading file {path}: {e}")
         return None
+    
+def save_excel(path: Path, df: pd.DataFrame) -> None:
+    ensure_dir(path)
+    if isinstance(df, pd.DataFrame):
+        df.to_excel(path, index=False)
+    else:
+        logger.error(f"Data is not a dataframe, it is a {type(df)}")
