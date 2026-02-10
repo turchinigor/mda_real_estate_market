@@ -15,13 +15,13 @@ from ..logging_config import setup_logging, get_logger
 # Seting up logging
 logger = setup_logging(name="scraper")
 
-def scrap_urls_pipeline(listing_types: dict, path: Path) -> None:
+def scrap_urls_pipeline(listing_types: dict, scrap_classes: dict, path: Path) -> None:
     driver = webdriver.Chrome()
     driver.maximize_window()
     driver.delete_all_cookies()
     for k, v in listing_types.items():
         logger.info("Started scraping: %s", k)
-        listings = scrap_urls(driver=driver, base_url=v, path=path, file_name=f"{k}.json")
+        listings = scrap_urls(driver=driver, base_url=v, scrap_classes=scrap_classes, path=path, file_name=f"{k}.json")
         logger.info("Scraped %s listings from %s", len(listings), k)
     logger.info("Completed scraping the urls for all listing types")
     driver.close()

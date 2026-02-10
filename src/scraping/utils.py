@@ -10,6 +10,8 @@ from ..logging_config import setup_logging, get_logger
 
 logger = setup_logging(name="scraper-utils")
 
+########################################################
+#Scrap URLs
 def scrap_element_url(element_type, wrapper, identifier: str, extract_type: str = "text") -> str | None:
     try:
         elem = wrapper.find_element(element_type, identifier)
@@ -21,11 +23,11 @@ def scrap_element_url(element_type, wrapper, identifier: str, extract_type: str 
         print(f"Error extracting {extract_type}: {e}")
         return None
 
-def scrap_page(driver, page: int) -> list[dict]:
+def scrap_page(driver, scrap_classes: dict, page: int) -> list[dict]:
 
     time.sleep(random.uniform(1, 2))
 
-    wrapper_selector = "[class^='AdShort_wrapper__']"
+    wrapper_selector = scrap_classes["wrapper"]
 
     # Wait for the page to load (adjust selector as needed)
     try:
@@ -37,10 +39,10 @@ def scrap_page(driver, page: int) -> list[dict]:
         print(f"Timeout waiting for elements: {e}")
         return []  # Return empty if failed
     
-    url_identifier_class = "[class^='AdShort_title__link__']"
-    square_m2_class = "[class^='AdShort_distance__']"
-    price_class = "[class^='AdShort_price__']"
-    date_class = "[class^='AdShort_date__']"
+    url_identifier_class = scrap_classes["url_identifier_class"]
+    square_m2_class = scrap_classes["square_m2_class"]
+    price_class = scrap_classes["price_class"]
+    date_class = scrap_classes["date_class"]
     
     # Find all wrapper elements (each represents one listing)
     wrappers = driver.find_elements(By.CSS_SELECTOR, wrapper_selector)
@@ -77,8 +79,7 @@ def scrap_page(driver, page: int) -> list[dict]:
     
     return listings
 
-def next_page(driver):
-    next_button = "[class^='Pagination_pagination__container__buttons__wrapper__icon__next']"
+def next_page(driver, next_button):
     try:
         n_elem = driver.find_element(By.CSS_SELECTOR, next_button)
         # Check if button is enabled (not disabled)
@@ -92,7 +93,7 @@ def next_page(driver):
         logger.warning(f"Could not find next button: {e}")
         return False
 
-def scrap_urls(driver, base_url: str, path: Path, file_name: str):
+def scrap_urls(driver, base_url: str, scrap_classes: dict, path: Path, file_name: str):
     try:
         existing_listings = read_json(Path(path, file_name))
     except Exception as e:
@@ -110,14 +111,112 @@ def scrap_urls(driver, base_url: str, path: Path, file_name: str):
     driver.get(base_url)
     if p > 1:
         for _ in range(p-1):
-            next_page(driver=driver)
+            next_page(driver, scrap_classes["next_button"])
     while page_availability:
-        listings_page = scrap_page(driver, p)
+        listings_page = scrap_page(driver, scrap_classes, p)
         listings.extend(listings_page)
-        page_availability = next_page(driver)
+        page_availability = next_page(driver, scrap_classes["next_button"])
         p += 1
         save_json(Path(path, file_name), data=listings)
     return listings
-# map_url_class = "adPage__content__map-redirect"
-# ^ get.attribute("href")
-# contains the longitude and latitude
+
+
+##############################################################
+#Scrap listings
+def get_features(driver, feature_elem: str) -> dict | None:
+    try:
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, feature_elem))
+        )
+    except Exception as e:
+        logger.info("Features elements not found")
+        return None
+    features = driver.find_elements(By.CSS_SELECTOR, f"div{feature_elem} li")
+    properties = {}
+    for feature_point in features:
+        feature = feature_point.find_elements("xpath", ".//span | .//a")
+        if len(feature) >= 2:
+            label = feature[0].text.strip()
+            value = feature[1].text.strip()
+            if label and value:
+                properties[label] = value
+    return properties
+
+def get_price(driver, price_elem):
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, price_elem["price_main"]))
+        )
+        logger.info("Located price element in listing")
+    except:
+        logger.info("Price element not located")
+        return None
+    
+    properties = {}
+    
+    try:
+        # Base price
+        price1 = driver.find_element(By.CSS_SELECTOR, f'span{price_elem["price_main"]}').text.strip()
+        print(f"1st Price {price1}")
+    except:
+        print("Price not available")
+        price1 = ""
+
+    # Converted prices
+    try:
+        converted = driver.find_elements(By.CSS_SELECTOR, f'ul {price_elem["price_converted"]} li')
+        price2 = converted[0].text.strip().replace("≈", "") if len(converted) > 0 else ""
+        price3 = converted[1].text.strip().replace("≈", "") if len(converted) > 1 else ""
+    except:
+        print("Prices not available")
+        price2, price3 = "", ""
+
+    # Clean and assign by currency
+    for price in [price1, price2, price3]:
+        if "€" in price:
+            properties["Price €"] = int(price.replace("€", "").replace(" ", "").replace(",", ""))
+        elif "$" in price:
+            properties["Price $"] = int(price.replace("$", "").replace(" ", "").replace(",", ""))
+        elif "MDL" in price:
+            properties["Price MDL"] = int(price.replace("MDL", "").replace(" ", "").replace(",", ""))
+
+    return properties
+
+def get_region(driver, region_elem):
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, region_elem))
+        )
+        logger.info("Located region element in listing")
+    except:
+        logger.info("Region element not located")
+        return None
+    
+    properties = {}
+    address = driver.find_element(By.CSS_SELECTOR, f'div{region_elem}').text
+    properties["Address"] = address
+    return properties
+
+def get_coordinates(driver, coordinates_elem):
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, coordinates_elem))
+        )
+        logger.info("Located URL containing the coordinates")
+    except Exception as e:
+        logger.info("URL not found")
+        return None
+    
+    properties = {}
+    url_elem = driver.find_element(By.CSS_SELECTOR, coordinates_elem)
+    url = url_elem.get_attribute("href")
+    url_parts = url.split("/")
+    if len(url_parts) < 2:
+        logger.error("Can't extract coordinates")
+        return None
+    
+    latitude = url_parts[-2].strip()
+    longitude = url_parts[-1].strip()
+    properties["latitude"] = latitude
+    properties["longitude"] = longitude
+    return properties
