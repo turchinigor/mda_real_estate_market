@@ -26,3 +26,9 @@ def scrap_urls_pipeline(listing_types: dict, scrap_classes: dict, path: Path) ->
     logger.info("Completed scraping the urls for all listing types")
     driver.close()
     driver.quit()
+    
+def scrap_listing():
+    driver = webdriver.Chrome()
+    driver.maximize_window()
+    driver.delete_all_cookies()
+    

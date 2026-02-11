@@ -183,6 +183,7 @@ def get_price(driver, price_elem):
     return properties
 
 def get_region(driver, region_elem):
+
     try:
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, region_elem))
@@ -190,12 +191,10 @@ def get_region(driver, region_elem):
         logger.info("Located region element in listing")
     except:
         logger.info("Region element not located")
-        return None
+        return {"Address": ""}
     
-    properties = {}
     address = driver.find_element(By.CSS_SELECTOR, f'div{region_elem}').text
-    properties["Address"] = address
-    return properties
+    return {"Address": address}
 
 def get_coordinates(driver, coordinates_elem):
     try:
@@ -220,3 +219,22 @@ def get_coordinates(driver, coordinates_elem):
     properties["latitude"] = latitude
     properties["longitude"] = longitude
     return properties
+
+def get_all_properties(driver, scrap_elements) -> dict | None:
+    features = get_features(driver, feature_elem=scrap_elements["features"])
+    if features is None:
+        logger.info("Features not found, listing is skiped")
+        return None
+    price = get_price(driver, price_elem=scrap_elements)
+    if price is None:
+        logger.info("Price not found, listing is skiped")
+        return None
+    coordinates = get_coordinates(driver, coordinates_elem=scrap_elements["map_url_class"])
+    if coordinates is None:
+        logger.info("Coordinates not found, listing is skiped")
+    region = get_region(driver, region_elem=scrap_elements["region"])
+    properties = features | price | coordinates | region
+    return properties
+
+def move_listings(driver, scrap_elements):
+    ...
