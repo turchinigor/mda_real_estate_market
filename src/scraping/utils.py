@@ -220,7 +220,7 @@ def get_coordinates(driver, coordinates_elem):
     properties["longitude"] = longitude
     return properties
 
-def get_all_properties(driver, scrap_elements) -> dict | None:
+def get_all_properties(driver, row, scrap_elements) -> dict | None:
     features = get_features(driver, feature_elem=scrap_elements["features"])
     if features is None:
         logger.info("Features not found, listing is skiped")
@@ -232,9 +232,7 @@ def get_all_properties(driver, scrap_elements) -> dict | None:
     coordinates = get_coordinates(driver, coordinates_elem=scrap_elements["map_url_class"])
     if coordinates is None:
         logger.info("Coordinates not found, listing is skiped")
-    region = get_region(driver, region_elem=scrap_elements["region"])
-    properties = features | price | coordinates | region
+        return None
+    region = get_region(driver, region_elem=scrap_elements["region"]) or {}
+    properties = {"page": row["page"]} | {"url": row["url"]} | {"date": row["date"]} | features | price | coordinates | region
     return properties
-
-def move_listings(driver, scrap_elements):
-    ...
