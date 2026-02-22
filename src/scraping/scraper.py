@@ -30,7 +30,7 @@ def scrap_urls_pipeline(listing_types: dict, scrap_classes: dict, path: Path) ->
 
 ### Listing Scraping pipeline
 
-def iterate_listings(driver, urls_data, config_elem, history):
+def iterate_listings(driver, urls_data, config_elem, history: Path):
     history_json = read_json(history)
     if len(history_json) > 0:
         listings = history_json
@@ -54,7 +54,15 @@ def iterate_listings(driver, urls_data, config_elem, history):
         
 
 
-def scrap_listing():
+def scrap_listing(folder_urls: Path, folder_output: Path, config_elem):
     driver = webdriver.Chrome()
     driver.maximize_window()
     driver.delete_all_cookies()
+    for file_path in folder_urls.iterdir():
+        if file_path.is_file():
+            if read_json(Path(folder_output/file_path)):
+                history = Path(folder_output/file_path)
+            else:
+                history = 
+            urls = read_json(Path(folder_urls)/file_path)
+            iterate_listings(driver=driver, urls_data=urls, config_elem=config_elem, history=history)
