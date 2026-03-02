@@ -53,7 +53,19 @@ def main():
     ensure_dir(folder_output)
 
     # Run the scraping
-    scrap_listing(folder_urls=folder_urls, folder_output=folder_output, config_elem=config['listing_classes'])
+    scraping_cfg = config.get("scraping", {})
+    max_workers = scraping_cfg.get("max_workers", 6)
+    save_every = scraping_cfg.get("save_every", 50)
+    page_load_timeout = scraping_cfg.get("page_load_timeout", 25)
+
+    scrap_listing(
+        folder_urls=folder_urls,
+        folder_output=folder_output,
+        config_elem=config["listing_classes"],
+        max_workers=max_workers,
+        save_every=save_every,
+        page_load_timeout=page_load_timeout,
+    )
 
 if __name__ == "__main__":
     main()

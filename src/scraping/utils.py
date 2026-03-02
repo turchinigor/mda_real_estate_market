@@ -2,8 +2,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from pathlib import Path
-import time
-import random
 
 from ..io import save_json, read_json
 from ..logging_config import setup_logging, get_logger
@@ -24,9 +22,6 @@ def scrap_element_url(element_type, wrapper, identifier: str, extract_type: str 
         return None
 
 def scrap_page(driver, scrap_classes: dict, page: int) -> list[dict]:
-
-    time.sleep(random.uniform(1, 2))
-
     wrapper_selector = scrap_classes["wrapper"]
 
     # Wait for the page to load (adjust selector as needed)
